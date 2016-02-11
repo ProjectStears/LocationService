@@ -10,7 +10,15 @@ public class MapTileLoader : MonoBehaviour {
 
     // Use this for initialization
     IEnumerator Start () {
-        pos = Config.WorldToTilePos(Input.location.lastData.longitude, Input.location.lastData.latitude, Config.Zoom);
+        if (Config.UseDebugGPSPosition)
+        {
+            pos = Config.WorldToTilePos(Config.DebugGPSPosition.y, Config.DebugGPSPosition.x, Config.Zoom);
+        }
+        else
+        {
+            pos = Config.WorldToTilePos(Input.location.lastData.longitude, Input.location.lastData.latitude, Config.Zoom);
+        }
+
         url = "http://a.tile.openstreetmap.org/" + Config.Zoom + "/" + Mathf.FloorToInt(pos.x) + "/" + Mathf.FloorToInt(pos.y) + ".png";
         GameObject.Find("url").GetComponent<Text>().text = url;
         WWW www = new WWW(url);

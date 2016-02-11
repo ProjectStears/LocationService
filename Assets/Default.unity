@@ -720,7 +720,6 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: ff2a82c399365af4bba51ac9a3ce2ed6, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  DummyPosition: {x: 8.209434, y: 48.05082}
   TilePrefab: {fileID: 126310, guid: 99f0bc4414c83fa4e9660094ef6aeb87, type: 2}
   GoStatus: {fileID: 941116677}
   GoLat: {fileID: 693417245}
@@ -733,7 +732,6 @@ MonoBehaviour:
   GoTilex: {fileID: 334494793}
   GoTiley: {fileID: 1340186090}
   GoTimer: {fileID: 370219764}
-  TimeToGoodFix: 10
 --- !u!1 &1340186090
 GameObject:
   m_ObjectHideFlags: 0

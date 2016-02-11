@@ -5,10 +5,6 @@ using UnityEngine.UI;
 
 public class GPSStuff : MonoBehaviour
 {
-    //private LocationService locSrv;
-
-    public Vector2 DummyPosition;
-
     public GameObject TilePrefab;
 
     public GameObject GoStatus;
@@ -41,7 +37,9 @@ public class GPSStuff : MonoBehaviour
     private bool _initialize = true;
     private bool _goodFix = false;
 
-    public float TimeToGoodFix;
+    private LocationInfo _locInfo;
+    private LocationServiceStatus _locStatus;
+    
     private float _fixTimer;
 
     // Use this for initialization
@@ -62,44 +60,53 @@ public class GPSStuff : MonoBehaviour
         _textTiley = GoTiley.GetComponent<Text>();
         _textTimer = GoTimer.GetComponent<Text>();
 
-        _fixTimer = TimeToGoodFix;
+        _fixTimer = Config.TimeToGoodGPSFix;
     }
 
     // Update is called once per frame
     void Update ()
-	{
-	    _textStatus.text = Input.location.status.ToString();
-	    _textLat.text = Input.location.lastData.latitude.ToString(CultureInfo.InvariantCulture);
-	    _textLon.text = Input.location.lastData.longitude.ToString(CultureInfo.InvariantCulture);
-	    _textAlt.text = Input.location.lastData.altitude.ToString(CultureInfo.InvariantCulture);
-	    _textTime.text = UnixTimeStampToDateTime(Input.location.lastData.timestamp).ToString(CultureInfo.InvariantCulture);
-	    _textHacc.text = Input.location.lastData.horizontalAccuracy.ToString(CultureInfo.InvariantCulture);
-	    _textVacc.text = Input.location.lastData.verticalAccuracy.ToString(CultureInfo.InvariantCulture);
-
-        _tile = Config.WorldToTilePos(Input.location.lastData.longitude, Input.location.lastData.latitude, Config.Zoom);
-        //_tile = WorldToTilePos(DummyPosition.x, DummyPosition.y, _zoom);
-
-        if (Input.location.status == LocationServiceStatus.Running && Input.location.lastData.horizontalAccuracy <= 20 &&
-            Input.location.lastData.verticalAccuracy <= 20 && _fixTimer > 0 && !_goodFix)
+    {
+        if (Config.UseDebugGPSPosition)
         {
-            _fixTimer -= Time.deltaTime;
+            SetDebugInfos("Debugging", Config.DebugGPSPosition.x.ToString(CultureInfo.InvariantCulture), Config.DebugGPSPosition.y.ToString(CultureInfo.InvariantCulture), Config.DebugGPSPosition.z.ToString(), "0", "1", "1");
+            _tile = Config.WorldToTilePos(Config.DebugGPSPosition.x, Config.DebugGPSPosition.y, Config.Zoom);
+
+            if (_initialize)
+            {
+                _goodFix = true;
+                _goMapTile = Instantiate(TilePrefab);
+                _initialize = false;
+            }
         }
         else
         {
-            _fixTimer = TimeToGoodFix;
-        }
+            _locStatus = Input.location.status;
+            _locInfo = Input.location.lastData;
 
-        _textTimer.text = _fixTimer.ToString(CultureInfo.InvariantCulture);
+            SetDebugInfos(_locStatus, _locInfo);
+            _tile = Config.WorldToTilePos(_locInfo.longitude, _locInfo.latitude, Config.Zoom);
 
-        if (_fixTimer < 0 && _goodFix == false)
-        {
-            _goodFix = true;
-        }
+            if (_locStatus == LocationServiceStatus.Running && _locInfo.horizontalAccuracy <= Config.MinGPSAcc && _locInfo.verticalAccuracy <= Config.MinGPSAcc && _fixTimer > 0 && !_goodFix)
+            {
+                _fixTimer -= Time.deltaTime;
+            }
+            else
+            {
+                _fixTimer = Config.TimeToGoodGPSFix;
+            }
 
-        if (_goodFix && _initialize)
-        {
-            _goMapTile = Instantiate(TilePrefab);
-            _initialize = false;
+            _textTimer.text = _fixTimer.ToString(CultureInfo.InvariantCulture);
+
+            if (_fixTimer < 0 && _goodFix == false)
+            {
+                _goodFix = true;
+            }
+
+            if (_goodFix && _initialize)
+            {
+                _goMapTile = Instantiate(TilePrefab);
+                _initialize = false;
+            }
         }
 
         _textZoom.text = Config.Zoom.ToString();
@@ -115,6 +122,24 @@ public class GPSStuff : MonoBehaviour
     void OnApplicationQuit()
     {
         Input.location.Stop();
+    }
+
+    private void SetDebugInfos(LocationServiceStatus locStatus, LocationInfo locInfo)
+    {
+        SetDebugInfos(locStatus.ToString(), locInfo.latitude.ToString(CultureInfo.InvariantCulture), locInfo.longitude.ToString(CultureInfo.InvariantCulture), locInfo.altitude.ToString(CultureInfo.InvariantCulture),
+            UnixTimeStampToDateTime(locInfo.timestamp).ToString(CultureInfo.InvariantCulture), locInfo.horizontalAccuracy.ToString(CultureInfo.InvariantCulture), locInfo.verticalAccuracy.ToString(CultureInfo.InvariantCulture));
+    }
+
+    private void SetDebugInfos(string status, string lat, string lon, string alt, string time, string hacc, string vacc)
+    {
+        _textStatus.text = status;
+        _textLat.text = lat;
+        _textLon.text = lon;
+        _textAlt.text = alt;
+        _textTime.text = time;
+        _textHacc.text = hacc;
+        _textVacc.text = vacc;
+
     }
 
     private DateTime UnixTimeStampToDateTime(double unixTimeStamp)
