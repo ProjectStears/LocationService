@@ -19,6 +19,9 @@ public class GPSStuff : MonoBehaviour
     public GameObject GoTilex;
     public GameObject GoTiley;
     public GameObject GoTimer;
+    public GameObject GoTouch1;
+    public GameObject GoTouch2;
+    public GameObject GoTouchAngle;
     private GameObject _goMapRoot;
     private GameObject _goPosMarker;
 
@@ -33,9 +36,13 @@ public class GPSStuff : MonoBehaviour
     private Text _textTilex;
     private Text _textTiley;
     private Text _textTimer;
+    private Text _textTouch1;
+    private Text _textTouch2;
+    private Text _textTouchAngle;
 
     private Vector2 _tile;
     private Vector2 _cameraOffset;
+    private float _angle;
 
     private bool _initialize = true;
     private bool _goodFix = false;
@@ -62,13 +69,19 @@ public class GPSStuff : MonoBehaviour
         _textTilex = GoTilex.GetComponent<Text>();
         _textTiley = GoTiley.GetComponent<Text>();
         _textTimer = GoTimer.GetComponent<Text>();
-
+        _textTouch1 = GoTouch1.GetComponent<Text>();
+        _textTouch2 = GoTouch2.GetComponent<Text>();
+        _textTouchAngle = GoTouchAngle.GetComponent<Text>();
+        
         _fixTimer = Config.TimeToGoodGPSFix;
     }
 
     // Update is called once per frame
     void Update ()
     {
+        _textTouch1.text = Vector2.zero.ToString();
+        _textTouch2.text = Vector2.zero.ToString();
+
         if (Config.UseDebugGPSPosition)
         {
             SetDebugInfos("Debugging", Config.DebugGPSPosition.x.ToString(CultureInfo.InvariantCulture), Config.DebugGPSPosition.y.ToString(CultureInfo.InvariantCulture), Config.DebugGPSPosition.z.ToString(), "0", "1", "1");
@@ -115,13 +128,38 @@ public class GPSStuff : MonoBehaviour
 #if UNITY_EDITOR
         _cameraOffset.x = Mathf.Clamp(_cameraOffset.x - Input.GetAxis("Horizontal") * Time.deltaTime, -Config.MaxCameraOffset.x, Config.MaxCameraOffset.x);
         _cameraOffset.y = Mathf.Clamp(_cameraOffset.y + Input.GetAxis("Vertical") * Time.deltaTime, -Config.MaxCameraOffset.y, Config.MaxCameraOffset.y);
+        Camera.main.transform.Rotate(Vector3.forward, Input.GetAxis("Rotation"));
+
 #elif UNITY_ANDROID
         if (Input.touchCount == 1)
         {
+            _textTouch1.text = Input.GetTouch(0).position.ToString();
             _cameraOffset.x = Mathf.Clamp(_cameraOffset.x - Input.GetTouch(0).deltaPosition.x * Time.deltaTime, -Config.MaxCameraOffset.x, Config.MaxCameraOffset.x);
             _cameraOffset.y = Mathf.Clamp(_cameraOffset.y + Input.GetTouch(0).deltaPosition.y * Time.deltaTime, -Config.MaxCameraOffset.y, Config.MaxCameraOffset.y);
         }
+
+        if (Input.touchCount == 2)
+        {
+            var _newAngle = Vector2.Angle(Input.GetTouch(0).position, Input.GetTouch(1).position);
+            _textTouch1.text = Input.GetTouch(0).position.ToString();
+            _textTouch2.text = Input.GetTouch(1).position.ToString();
+
+
+            _textTouchAngle.text = _angle.ToString(CultureInfo.InvariantCulture);
+            if (_angle != 0)
+            {
+                Camera.main.transform.Rotate(Vector3.forward, _angle - _newAngle);
+            }
+            _angle = _newAngle;
+
+            _textTouchAngle.text = _angle.ToString(CultureInfo.InvariantCulture);
+        }
+        else
+        {
+            _angle = 0;
+        }
 #endif
+
         if (_goMapRoot != null && _goodFix)
         {
             _goMapRoot.transform.position = new Vector3((5 - 10*(_tile.x - Mathf.FloorToInt(_tile.x)) - _cameraOffset.x), (-5 + 10*(_tile.y - Mathf.FloorToInt(_tile.y)) + _cameraOffset.y), 0);
@@ -149,7 +187,6 @@ public class GPSStuff : MonoBehaviour
         _textTime.text = time;
         _textHacc.text = hacc;
         _textVacc.text = vacc;
-
     }
 
     private DateTime UnixTimeStampToDateTime(double unixTimeStamp)
