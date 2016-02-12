@@ -25,6 +25,8 @@ public class MapTileLoader : MonoBehaviour {
         yield return www;
         Renderer renderer = GetComponent<Renderer>();
         renderer.material.mainTexture = www.texture;
+
+        this.gameObject.name = Mathf.FloorToInt(pos.x) + "x" + Mathf.FloorToInt(pos.y) + "x" + Config.Zoom;
     }
 	
 	// Update is called once per frame

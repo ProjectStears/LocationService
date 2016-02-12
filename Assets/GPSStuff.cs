@@ -6,6 +6,7 @@ using UnityEngine.UI;
 public class GPSStuff : MonoBehaviour
 {
     public GameObject TilePrefab;
+    public GameObject PosMarkerPrefab;
 
     public GameObject GoStatus;
     public GameObject GoLat;
@@ -18,7 +19,8 @@ public class GPSStuff : MonoBehaviour
     public GameObject GoTilex;
     public GameObject GoTiley;
     public GameObject GoTimer;
-    private GameObject _goMapTile;
+    private GameObject _goMapRoot;
+    private GameObject _goPosMarker;
 
     private Text _textStatus;
     private Text _textLat;
@@ -33,6 +35,7 @@ public class GPSStuff : MonoBehaviour
     private Text _textTimer;
 
     private Vector2 _tile;
+    private Vector2 _cameraOffset;
 
     private bool _initialize = true;
     private bool _goodFix = false;
@@ -73,9 +76,7 @@ public class GPSStuff : MonoBehaviour
 
             if (_initialize)
             {
-                _goodFix = true;
-                _goMapTile = Instantiate(TilePrefab);
-                _initialize = false;
+                LoadMap();
             }
         }
         else
@@ -104,18 +105,27 @@ public class GPSStuff : MonoBehaviour
 
             if (_goodFix && _initialize)
             {
-                _goMapTile = Instantiate(TilePrefab);
-                _initialize = false;
+                LoadMap();
             }
         }
 
         _textZoom.text = Config.Zoom.ToString();
         _textTilex.text = _tile.x.ToString(CultureInfo.InvariantCulture);
         _textTiley.text = _tile.y.ToString(CultureInfo.InvariantCulture);
-
-        if (_goMapTile != null && _goodFix)
+#if UNITY_EDITOR
+        _cameraOffset.x = Mathf.Clamp(_cameraOffset.x - Input.GetAxis("Horizontal") * Time.deltaTime, -Config.MaxCameraOffset.x, Config.MaxCameraOffset.x);
+        _cameraOffset.y = Mathf.Clamp(_cameraOffset.y + Input.GetAxis("Vertical") * Time.deltaTime, -Config.MaxCameraOffset.y, Config.MaxCameraOffset.y);
+#elif UNITY_ANDROID
+        if (Input.touchCount == 1)
         {
-            _goMapTile.transform.position = new Vector3(5 - 10*(_tile.x - Mathf.FloorToInt(_tile.x)), -5 + 10*(_tile.y - Mathf.FloorToInt(_tile.y)), 0);
+            _cameraOffset.x = Mathf.Clamp(_cameraOffset.x - Input.GetTouch(0).deltaPosition.x * Time.deltaTime, -Config.MaxCameraOffset.x, Config.MaxCameraOffset.x);
+            _cameraOffset.y = Mathf.Clamp(_cameraOffset.y + Input.GetTouch(0).deltaPosition.y * Time.deltaTime, -Config.MaxCameraOffset.y, Config.MaxCameraOffset.y);
+        }
+#endif
+        if (_goMapRoot != null && _goodFix)
+        {
+            _goMapRoot.transform.position = new Vector3((5 - 10*(_tile.x - Mathf.FloorToInt(_tile.x)) - _cameraOffset.x), (-5 + 10*(_tile.y - Mathf.FloorToInt(_tile.y)) + _cameraOffset.y), 0);
+            _goPosMarker.transform.position = new Vector3(-_cameraOffset.x, _cameraOffset.y, 0);
         }
 	}
 
@@ -153,5 +163,17 @@ public class GPSStuff : MonoBehaviour
     public void EndThis()
     {
         Application.Quit();
+    }
+
+    private void LoadMap()
+    {
+        _goodFix = true;
+        _goMapRoot = new GameObject("MapRoot");
+
+        var go = Instantiate(TilePrefab);
+        go.transform.parent = _goMapRoot.transform;
+
+        _goPosMarker = Instantiate(PosMarkerPrefab);
+        _initialize = false;
     }
 }

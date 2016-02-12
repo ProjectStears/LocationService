@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Net;
 using UnityEngine;
 
 public static class Config
@@ -6,6 +7,7 @@ public static class Config
     public static int Zoom = 16;
     public static float MinGPSAcc = 40;
     public static float TimeToGoodGPSFix = 10;
+    public static Vector2 MaxCameraOffset;
 
     public static bool UseDebugGPSPosition;
     public static Vector3 DebugGPSPosition;
@@ -13,7 +15,7 @@ public static class Config
     static Config()
     {
         DebugGPSPosition = new Vector3(48.050144f, 8.201419f, 100f);
-
+        MaxCameraOffset = new Vector2(5f, 5f);
 #if UNITY_EDITOR
         UseDebugGPSPosition = true;
 #elif UNITY_ANDROID
