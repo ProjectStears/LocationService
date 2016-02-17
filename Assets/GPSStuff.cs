@@ -45,7 +45,6 @@ public class GPSStuff : MonoBehaviour
     private float _angle;
 
     private bool _initialize = true;
-    private bool _goodFix = false;
 
     private LocationInfo _locInfo;
     private LocationServiceStatus _locStatus;
@@ -84,6 +83,8 @@ public class GPSStuff : MonoBehaviour
 
         if (Config.UseDebugGPSPosition)
         {
+            Config.CurrentGPSPosition = Config.DebugGPSPosition;
+
             SetDebugInfos("Debugging", Config.DebugGPSPosition.x.ToString(CultureInfo.InvariantCulture), Config.DebugGPSPosition.y.ToString(CultureInfo.InvariantCulture), Config.DebugGPSPosition.z.ToString(), "0", "1", "1");
             _tile = Config.WorldToTilePos(Config.DebugGPSPosition.x, Config.DebugGPSPosition.y, Config.Zoom);
 
@@ -97,10 +98,13 @@ public class GPSStuff : MonoBehaviour
             _locStatus = Input.location.status;
             _locInfo = Input.location.lastData;
 
+            Config.CurrentGPSPosition.x = _locInfo.longitude;
+            Config.CurrentGPSPosition.y = _locInfo.latitude;
+
             SetDebugInfos(_locStatus, _locInfo);
             _tile = Config.WorldToTilePos(_locInfo.longitude, _locInfo.latitude, Config.Zoom);
 
-            if (_locStatus == LocationServiceStatus.Running && _locInfo.horizontalAccuracy <= Config.MinGPSAcc && _locInfo.verticalAccuracy <= Config.MinGPSAcc && _fixTimer > 0 && !_goodFix)
+            if (_locStatus == LocationServiceStatus.Running && _locInfo.horizontalAccuracy <= Config.MinGPSAcc && _locInfo.verticalAccuracy <= Config.MinGPSAcc && _fixTimer > 0 && !Config.GoodGPSFix)
             {
                 _fixTimer -= Time.deltaTime;
             }
@@ -111,12 +115,12 @@ public class GPSStuff : MonoBehaviour
 
             _textTimer.text = _fixTimer.ToString(CultureInfo.InvariantCulture);
 
-            if (_fixTimer < 0 && _goodFix == false)
+            if (_fixTimer < 0 && Config.GoodGPSFix == false)
             {
-                _goodFix = true;
+                Config.GoodGPSFix = true;
             }
 
-            if (_goodFix && _initialize)
+            if (Config.GoodGPSFix && _initialize)
             {
                 LoadMap();
             }
@@ -160,7 +164,7 @@ public class GPSStuff : MonoBehaviour
         }
 #endif
 
-        if (_goMapRoot != null && _goodFix)
+        if (_goMapRoot != null && Config.GoodGPSFix)
         {
             _goMapRoot.transform.position = new Vector3((5 - 10*(_tile.x - Mathf.FloorToInt(_tile.x)) - _cameraOffset.x), (-5 + 10*(_tile.y - Mathf.FloorToInt(_tile.y)) + _cameraOffset.y), 0);
             _goPosMarker.transform.position = new Vector3(-_cameraOffset.x, _cameraOffset.y, 0);
@@ -204,7 +208,7 @@ public class GPSStuff : MonoBehaviour
 
     private void LoadMap()
     {
-        _goodFix = true;
+        Config.GoodGPSFix = true;
         _goMapRoot = new GameObject("MapRoot");
 
         var go = Instantiate(TilePrefab);

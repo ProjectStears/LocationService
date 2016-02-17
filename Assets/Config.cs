@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Net;
+using MySql.Data.MySqlClient;
 using UnityEngine;
 
 public static class Config
@@ -7,13 +8,29 @@ public static class Config
     public static int Zoom = 16;
     public static float MinGPSAcc = 40;
     public static float TimeToGoodGPSFix = 10;
+    public static bool GoodGPSFix = false;
     public static Vector2 MaxCameraOffset;
+    public static Vector2 CurrentGPSPosition;
+
 
     public static bool UseDebugGPSPosition;
     public static Vector3 DebugGPSPosition;
 
+    public static MySqlConnection DbConnection;
+
+
     static Config()
     {
+        DbConnection = new MySqlConnection("server=127.0.0.1;uid=root;pwd=;database=stears;");
+        try
+        {
+            DbConnection.Open();
+        }
+        catch (MySqlException ex)
+        {
+            Debug.LogWarning(ex.Message);
+        }
+
         DebugGPSPosition = new Vector3(48.050144f, 8.201419f, 100f);
         MaxCameraOffset = new Vector2(5f, 5f);
 #if UNITY_EDITOR
